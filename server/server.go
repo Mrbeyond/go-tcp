@@ -15,22 +15,31 @@ func main() {
 
 	Pl("Server is listening")
 
-	conn, err := ln.Accept()
-	LogError(err)
+	for {
+		conn, err := ln.Accept()
+		LogError(err)
+		go handleConnection(conn)
+	}
+}
+
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	Pl("Connected to client!")
-
+	buffer := make([]byte, 1024)
 	for {
-		buffer := make([]byte, 1024)
 		n, err := conn.Read(buffer)
-		if errors.Is(err, io.EOF) {
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				LogError(err)
+			}
 			break
 		}
-		LogError(err)
-		Pl("Received: ", string(buffer[:n]))
-		conn.Write([]byte("Mssage Received\n"))
+		received := string(buffer[:n])
+		Pl("Received:", received)
+
+		conn.Write([]byte(fmt.Sprintf("Message Received from %s\n", received)))
 	}
+	Pl("Ends")
 }
 
 func LogError(err error) {
